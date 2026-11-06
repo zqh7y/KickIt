@@ -1,0 +1,12 @@
+node_modules/
+dist/
+dist-preview/
+preview/
+release/
+.gen-cache.json
+
+# the Play upload key and its passwords: never in git
+android/keys/
+android/keystore.properties
+*.jks
+*.keystore

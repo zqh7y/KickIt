@@ -1,0 +1,14 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  html,body{margin:0;width:1024px;height:500px;overflow:hidden;background:#dcf3e6;font-family:'Fredoka',sans-serif}
+  canvas{position:absolute;inset:0;display:block}
+  .logo{position:absolute;left:64px;top:118px;margin:0;display:grid;font-size:118px;font-weight:700;line-height:.86;text-transform:uppercase;color:#fffdf5;
+    text-shadow:4px 0 0 #1e2619,-4px 0 0 #1e2619,0 4px 0 #1e2619,0 -4px 0 #1e2619,3px 3px 0 #1e2619,-3px 3px 0 #1e2619,3px -3px 0 #1e2619,-3px -3px 0 #1e2619,0 10px 0 #1e2619}
+  .logo span+span{color:#ff5c47}
+  .tag{position:absolute;left:70px;top:356px;margin:0;padding:6px 16px;background:#fffdf5;border:2px solid #1e2619;border-radius:999px;font-size:22px;font-weight:600;color:#1e2619}
+</style>
+<link rel="stylesheet" href="/src/style.css">
+</head>
+<body><canvas id="c"></canvas><h1 class="logo"><span>Kick</span><span>It!</span></h1><p class="tag">Stop the ball inside the circle.</p>
+<script type="module" src="./feature.ts"></script></body></html>

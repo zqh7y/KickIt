@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <title>KickIt!</title>
+    <meta name="claude:viewport-fit-sides" content="cover" />
+    <meta name="description" content="Kick the ball across floating football pitches and stop it inside the circle." />
+    <!-- = skies[0] in src/theme.ts, for the first paint before any script runs. After that Hud.setSky
+         writes each floor's sky here, and in dev the Hud warns if this value no longer matches skies[0]. -->
+    <meta name="theme-color" content="#dcf3e6" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="scene" aria-label="KickIt! playfield"></canvas>
+
+      <div class="ui" id="ui">
+        <header class="hud" id="hud" hidden>
+          <div class="floor-count">
+            <span class="hud-label">Floor</span>
+            <span class="hud-value"><span class="flip" id="floor-num">1</span><span class="of">/<span id="floor-total">50</span></span></span>
+          </div>
+
+          <div class="timer" id="timer" role="timer" aria-label="Time left on this floor">
+            <svg class="timer-burst" viewBox="0 0 100 100" aria-hidden="true">
+              <g class="burst-ink">
+                <path d="M50 4v10M50 86v10M4 50h10M86 50h10M17.5 17.5l7 7M75.5 75.5l7 7M17.5 82.5l7-7M75.5 24.5l7-7" />
+              </g>
+              <g class="burst-gold">
+                <path d="M50 4v10M50 86v10M4 50h10M86 50h10M17.5 17.5l7 7M75.5 75.5l7 7M17.5 82.5l7-7M75.5 24.5l7-7" />
+              </g>
+            </svg>
+            <span class="timer-text digits" id="timer-text">30</span>
+          </div>
+
+          <div class="kicks" id="kicks" role="img" aria-label="3 kicks left">
+            <span class="kick-ball" id="kick-ball" aria-hidden="true">
+              <span class="kick-puff"></span>
+              <svg class="glint" viewBox="0 0 10 10"><path d="M5 .6Q5.7 4.3 9.4 5 5.7 5.7 5 9.4 4.3 5.7.6 5 4.3 4.3 5 .6Z" /></svg>
+              <svg class="glint" viewBox="0 0 10 10"><path d="M5 .6Q5.7 4.3 9.4 5 5.7 5.7 5 9.4 4.3 5.7.6 5 4.3 4.3 5 .6Z" /></svg>
+              <svg class="glint" viewBox="0 0 10 10"><path d="M5 .6Q5.7 4.3 9.4 5 5.7 5.7 5 9.4 4.3 5.7.6 5 4.3 4.3 5 .6Z" /></svg>
+            </span>
+            <span class="kick-count" aria-hidden="true"><span class="kick-x">×</span><span class="flip" id="kick-num">3</span></span>
+          </div>
+
+          <button class="icon-btn zoom-btn" id="zoom-btn" type="button" aria-label="Zoom in on the shot">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <g class="zoom-in">
+                <path class="icon-ink" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
+                <path class="icon-line" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
+                <circle class="icon-dot" cx="12" cy="12" r="2" />
+              </g>
+              <g class="zoom-out">
+                <path class="icon-ink" d="M9 4v5H4M15 4v5h5M15 20v-5h5M9 20v-5H4" />
+                <path class="icon-line" d="M9 4v5H4M15 4v5h5M15 20v-5h5M9 20v-5H4" />
+              </g>
+            </svg>
+          </button>
+
+          <button class="icon-btn tester-btn" id="tester-btn" type="button" aria-label="Tester mode" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <g class="icon-ink"><ellipse cx="12" cy="14.2" rx="4" ry="5" /><circle cx="12" cy="7.4" r="2.3" /><path d="M8 11.6H4.6M8 14.8H4.2M8.7 18.2l-2.9 2.1M16 11.6h3.4M16 14.8h3.8M15.3 18.2l2.9 2.1M10.8 5.5L9.4 3.6M13.2 5.5l1.4-1.9" /></g>
+              <g class="icon-line"><ellipse cx="12" cy="14.2" rx="4" ry="5" /><circle cx="12" cy="7.4" r="2.3" /><path d="M8 11.6H4.6M8 14.8H4.2M8.7 18.2l-2.9 2.1M16 11.6h3.4M16 14.8h3.8M15.3 18.2l2.9 2.1M10.8 5.5L9.4 3.6M13.2 5.5l1.4-1.9" /></g>
+            </svg>
+          </button>
+          <span class="tester-badge" id="tester-badge" hidden>Tester</span>
+
+          <div class="run-clock" id="run-clock" hidden>
+            <span class="hud-label">Run</span>
+            <span class="digits" id="run-time">0:00.00</span>
+          </div>
+        </header>
+
+        <button class="icon-btn nav-btn nav-prev" id="nav-prev" type="button" aria-label="Previous floor" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="icon-ink" d="M15 5l-7 7 7 7" /><path class="icon-line" d="M15 5l-7 7 7 7" /></svg>
+        </button>
+        <button class="icon-btn nav-btn nav-next" id="nav-next" type="button" aria-label="Next floor" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="icon-ink" d="M9 5l7 7-7 7" /><path class="icon-line" d="M9 5l7 7-7 7" /></svg>
+        </button>
+
+        <div class="power" id="power" hidden aria-hidden="true">0%</div>
+
+        <p class="hint hint-zoom" id="hint-zoom" hidden>
+          <span class="pinch-icon" aria-hidden="true"><span class="pinch-dot"></span><span class="pinch-dot"></span></span>
+          Pinch to zoom
+        </p>
+
+        <p class="hint" id="hint" hidden>
+          <span class="hint-icon" aria-hidden="true"><span class="hint-dot"></span></span>
+          Drag the ball back, let go to kick
+        </p>
+
+        <div class="callout" id="callout" role="status">
+          <span class="callout-text" id="callout-text"></span>
+          <span class="callout-ribbon ribbon" id="callout-ribbon" hidden>
+            <svg class="callout-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12a7 7 0 1 1-2.05-4.95" /><path d="M18.5 3.5v4.2h-4.2" /></svg>
+            <span id="callout-sub"></span>
+          </span>
+        </div>
+
+        <section class="title-screen" id="title" hidden aria-labelledby="title-name">
+          <div class="title-top">
+            <h1 class="logo" id="title-name"><span>Kick</span><span>It!</span></h1>
+            <p class="tagline ribbon">Stop the ball inside the circle.</p>
+          </div>
+          <div class="title-bottom">
+            <div class="modes">
+              <button class="mode mode-play" id="btn-play" type="button">
+                <svg class="mode-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 4.8v14.4L19.5 12z" /></svg>
+                <span class="mode-label">Play</span>
+              </button>
+              <button class="mode mode-speedrun" id="btn-speedrun" type="button">
+                <svg class="mode-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13.6 2.2L5.2 13.4h6l-1.6 8.4 9.2-12.2h-6.1z" /></svg>
+                <span class="mode-label">Speedrun</span>
+                <span class="mode-badge digits" id="speedrun-best" hidden></span>
+              </button>
+            </div>
+            <button class="shop-btn" id="btn-shop" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <circle class="ball-face" cx="12" cy="12" r="9" />
+                <path class="ball-patch" d="M12 8.2l3.6 2.6-1.4 4.2H9.8L8.4 10.8z" />
+                <path class="ball-seam" d="M12 8.2V3M15.6 10.8l4.9-1.6M14.2 15l3 4.2M9.8 15l-3 4.2M8.4 10.8L3.5 9.2" />
+              </svg>
+              <span>Shop</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="shop" id="shop" hidden aria-label="Shop">
+          <div class="shop-grid" id="shop-grid"></div>
+          <button class="shop-btn shop-done" id="shop-done" type="button">Done</button>
+        </section>
+
+        <section class="complete" id="complete" hidden aria-labelledby="complete-title">
+          <div class="complete-card">
+            <p class="eyebrow" id="complete-mode">Speedrun</p>
+            <h1 class="complete-title" id="complete-title">All floors clear</h1>
+            <p class="complete-time digits" id="complete-time">0:00.00</p>
+            <p class="complete-best" id="complete-best"></p>
+            <button class="btn btn-primary btn-wide" id="btn-again" type="button"><span class="btn-label">Run again</span></button>
+            <button class="btn-text" id="btn-menu" type="button">Change mode</button>
+          </div>
+        </section>
+
+        <div class="flash" id="flash" aria-hidden="true"></div>
+      </div>
+    </div>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">KickIt!</string>
+    <string name="title_activity_main">KickIt!</string>
+    <string name="package_name">com.skypitch.game</string>
+    <string name="custom_url_scheme">com.skypitch.game</string>
+</resources>

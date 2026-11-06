@@ -1,0 +1,1175 @@
+/* KickIt! UI. Every value comes from the theme tokens (src/theme.ts),
+   injected as custom properties on :root at build time. Single-look game
+   world: no dark variant on purpose. */
+
+@font-face {
+  font-family: 'Fredoka';
+  font-weight: 500;
+  font-display: block;
+  src: url('../node_modules/@fontsource/fredoka/files/fredoka-latin-500-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Fredoka';
+  font-weight: 600;
+  font-display: block;
+  src: url('../node_modules/@fontsource/fredoka/files/fredoka-latin-600-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Fredoka';
+  font-weight: 700;
+  font-display: block;
+  src: url('../node_modules/@fontsource/fredoka/files/fredoka-latin-700-normal.woff2') format('woff2');
+}
+
+:root {
+  color-scheme: light;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--sky);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--small-size);
+  font-weight: var(--small-weight);
+  letter-spacing: var(--small-track);
+  line-height: var(--small-line);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  transition: background-color var(--slow) var(--ease);
+}
+
+#scene {
+  position: fixed;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+/* The overlay itself takes no taps; its controls opt back in. */
+.ui {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.digits {
+  font-variant-numeric: tabular-nums;
+}
+.digits .d {
+  display: inline-block;
+  width: var(--digit);
+  text-align: center;
+}
+.digits .s {
+  display: inline-block;
+  width: var(--digit-sep);
+  text-align: center;
+}
+
+/* ------------------------------------------------------------- HUD */
+
+.hud {
+  position: absolute;
+  top: calc(var(--safe-top) + var(--space-3));
+  left: var(--gutter-left);
+  right: var(--gutter-right);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  row-gap: var(--space-1);
+  animation: drop-in var(--slow) var(--ease-pop) backwards;
+}
+
+/* Every HUD reading is bare text on the sky: paper with an ink outline and
+   lift, as the power readout and the callout are. */
+.hud-label {
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  letter-spacing: var(--label-track);
+  line-height: var(--label-line);
+  text-transform: var(--label-case);
+  color: var(--paper);
+  text-shadow: var(--outline-ink-label);
+}
+.hud-value {
+  font-size: var(--value-size);
+  font-weight: var(--value-weight);
+  letter-spacing: var(--value-track);
+  line-height: var(--value-line);
+  text-transform: var(--value-case);
+  color: var(--paper);
+  text-shadow: var(--outline-ink), 0 var(--lift-text) 0 var(--ink);
+  white-space: nowrap;
+}
+.hud-value .of {
+  font-size: var(--value-total-size);
+  font-weight: var(--value-total-weight);
+  letter-spacing: var(--value-total-track);
+  line-height: var(--value-total-line);
+  text-transform: var(--value-total-case);
+}
+.flip {
+  display: inline-block;
+}
+.flip.go {
+  animation: flip var(--base) var(--ease-pop);
+}
+
+.floor-count {
+  justify-self: start;
+  display: grid;
+  justify-items: start;
+  gap: var(--space-1);
+}
+
+/* Countdown: just the seconds, 1.5x the other HUD numbers. It bumps every
+   second while running, turns gold past half time, red and ringing in the
+   last five, and bursts gold on a clear. hud.ts sets the state classes. */
+.timer {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.timer-text {
+  font-size: var(--timer-size);
+  font-weight: var(--timer-weight);
+  letter-spacing: var(--timer-track);
+  line-height: var(--timer-line);
+  text-transform: var(--timer-case);
+  color: var(--paper);
+  text-shadow: var(--outline-ink), 0 var(--lift-text) 0 var(--ink);
+  white-space: nowrap;
+  transition: color var(--base) var(--ease);
+}
+.timer.mid .timer-text,
+.timer.cleared .timer-text {
+  color: var(--gold);
+}
+.timer.urgent .timer-text {
+  color: var(--danger);
+}
+.timer.idle .timer-text {
+  animation: breathe var(--demo-time) var(--ease) infinite;
+}
+.timer.tick .timer-text {
+  animation: tick-bump var(--base) var(--ease-pop);
+}
+.timer.urgent.tick .timer-text {
+  animation: alarm var(--slow) var(--ease);
+}
+.timer.cleared .timer-text {
+  animation: tick-bump var(--slow) var(--ease-pop);
+}
+.timer-burst {
+  position: absolute;
+  left: calc(var(--space-6) * -1);
+  top: calc(var(--space-6) * -1);
+  width: calc(100% + var(--space-6) * 2);
+  height: calc(100% + var(--space-6) * 2);
+  overflow: visible;
+  opacity: 0;
+  pointer-events: none;
+}
+.timer-burst path {
+  fill: none;
+  stroke-linecap: round;
+}
+.burst-ink path {
+  stroke: var(--ink);
+  stroke-width: var(--line-outline);
+}
+.burst-gold path {
+  stroke: var(--gold);
+  stroke-width: var(--line-stroke);
+}
+.timer.cleared .timer-burst {
+  animation: burst var(--slow) var(--ease) both;
+}
+
+/* Kicks: the game's own 3D football, which game.ts draws into .kick-ball's
+   box, and the count beside it. */
+.kicks {
+  justify-self: end;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.kick-ball {
+  position: relative;
+  width: var(--kick-ball);
+  height: var(--kick-ball);
+}
+.kick-count {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--value-size);
+  font-weight: var(--value-weight);
+  letter-spacing: var(--value-track);
+  line-height: var(--value-line);
+  text-transform: var(--value-case);
+  color: var(--paper);
+  text-shadow: var(--outline-ink), 0 var(--lift-text) 0 var(--ink);
+  white-space: nowrap;
+  transition: color var(--base) var(--ease);
+}
+.kick-x {
+  font-size: var(--value-total-size);
+  font-weight: var(--value-total-weight);
+  letter-spacing: var(--value-total-track);
+  line-height: var(--value-total-line);
+  text-transform: var(--value-total-case);
+}
+.kicks.last .kick-count {
+  color: var(--gold);
+}
+.kicks.out .kick-count {
+  color: var(--accent);
+}
+.kicks.warn .kick-count {
+  animation: shake var(--slow) var(--ease);
+}
+.kick-puff {
+  position: absolute;
+  inset: 0;
+  border: var(--stroke) solid var(--paper);
+  border-radius: var(--radius-pill);
+  opacity: 0;
+}
+.kicks.spend .kick-puff {
+  animation: puff var(--slow) var(--ease) both;
+}
+.glint {
+  position: absolute;
+  width: var(--glint);
+  height: var(--glint);
+  overflow: visible;
+  fill: var(--gold);
+  stroke: var(--ink);
+  stroke-width: var(--fine-line);
+  stroke-linejoin: round;
+  transform: scale(0);
+  pointer-events: none;
+}
+.glint:nth-of-type(1) {
+  top: 0;
+  left: var(--space-1);
+}
+.glint:nth-of-type(2) {
+  top: var(--space-2);
+  right: calc(var(--space-1) * -1);
+}
+.glint:nth-of-type(3) {
+  bottom: var(--space-1);
+  right: var(--space-2);
+}
+.kicks.shine .glint {
+  animation: twinkle var(--slow) var(--ease-pop) both;
+}
+.kicks.shine .glint:nth-of-type(2) {
+  animation-delay: var(--stagger);
+}
+.kicks.shine .glint:nth-of-type(3) {
+  animation-delay: calc(var(--stagger) * 2);
+}
+
+/* Speedrun: the run time, under the countdown. */
+.run-clock {
+  grid-column: 2;
+  justify-self: center;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--small-strong-size);
+  font-weight: var(--small-strong-weight);
+  letter-spacing: var(--small-strong-track);
+  line-height: var(--small-strong-line);
+  text-transform: var(--small-strong-case);
+  color: var(--paper);
+  text-shadow: var(--outline-ink-label);
+  white-space: nowrap;
+}
+
+/* A bare icon button (floor arrows, zoom): just the drawing, paper with an
+   ink outline and lift so it reads on any sky; the tap area stays --nav-size. */
+.icon-btn {
+  box-sizing: border-box;
+  width: var(--nav-size);
+  height: var(--nav-size);
+  margin: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  appearance: none;
+  background: none;
+  color: var(--paper);
+  border: 0;
+  border-radius: var(--radius-pill);
+  font-family: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  transition: opacity var(--base) var(--ease);
+  animation: pop-in var(--slow) var(--ease-pop) backwards;
+}
+.icon-btn svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  overflow: visible;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 var(--lift) 0 var(--ink));
+  transition: transform var(--fast) var(--ease), filter var(--fast) var(--ease);
+}
+.icon-btn .icon-ink {
+  stroke: var(--ink);
+  stroke-width: var(--line-outline);
+}
+.icon-btn .icon-line {
+  stroke: currentColor;
+  stroke-width: var(--line-stroke);
+}
+.icon-btn:active:not(:disabled):not([aria-disabled='true']) svg {
+  transform: translateY(calc(var(--lift) - var(--lift-pressed)));
+  filter: drop-shadow(0 var(--lift-pressed) 0 var(--ink));
+}
+.icon-btn:disabled,
+.icon-btn[aria-disabled='true'] {
+  opacity: var(--dim);
+  cursor: default;
+}
+
+/* Floor arrows (Play mode): on the screen edges, centred in the safe area. */
+.nav-btn {
+  position: absolute;
+  top: calc(50% + (var(--safe-top) - var(--safe-bottom)) / 2 - var(--nav-size) / 2);
+}
+.nav-prev {
+  left: var(--gutter-left);
+}
+.nav-next {
+  right: var(--gutter-right);
+}
+
+/* Frame the shot and back: under the kicks, out of the HUD's flow so the
+   camera keeps the room it had. A focus frame that turns into an expand
+   icon once zoomed in. */
+.zoom-btn {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  right: calc((var(--nav-size) - var(--zoom-icon)) / -2);
+}
+.zoom-btn svg {
+  width: var(--zoom-icon);
+  height: var(--zoom-icon);
+}
+.zoom-btn .zoom-in,
+.zoom-btn .zoom-out {
+  transform-box: view-box;
+  transform-origin: center;
+  transition: transform var(--base) var(--ease-pop), opacity var(--fast) var(--ease);
+}
+.zoom-btn .zoom-out {
+  opacity: 0;
+  transform: scale(0.6) rotate(-45deg);
+}
+.zoom-btn.zoomed .zoom-in {
+  opacity: 0;
+  transform: scale(1.3) rotate(45deg);
+}
+.zoom-btn.zoomed .zoom-out {
+  opacity: 1;
+  transform: none;
+}
+.zoom-btn .icon-dot {
+  fill: currentColor;
+  stroke: var(--ink);
+  stroke-width: var(--fine-line);
+}
+
+/* Tester mode (src/config.ts TESTER_TOOLS): a bug under the zoom button; gold
+   while on, with a badge under the floor count. */
+.tester-btn {
+  position: absolute;
+  top: calc(100% + var(--space-1) + var(--nav-size));
+  right: calc((var(--nav-size) - var(--zoom-icon)) / -2);
+}
+.tester-btn svg {
+  width: var(--zoom-icon);
+  height: var(--zoom-icon);
+}
+.tester-btn.on {
+  color: var(--gold);
+}
+.tester-badge {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  left: 0;
+  padding: var(--space-1) var(--space-2);
+  background: var(--gold);
+  color: var(--ink);
+  border: var(--stroke) solid var(--ink);
+  border-radius: var(--radius-pill);
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  letter-spacing: var(--label-track);
+  line-height: var(--label-line);
+  text-transform: var(--label-case);
+  animation: pop-in var(--base) var(--ease-pop) backwards;
+}
+
+/* ------------------------------------------------------- in-world labels */
+
+/* hud.ts places it above the aim tip, kept inside the safe area. */
+.power {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: var(--value-size);
+  font-weight: var(--value-weight);
+  letter-spacing: var(--value-track);
+  line-height: var(--value-line);
+  text-transform: var(--value-case);
+  color: var(--paper);
+  text-shadow: var(--outline-ink), 0 var(--lift-text) 0 var(--ink);
+  white-space: nowrap;
+}
+
+.hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--safe-bottom) + var(--space-6));
+  width: max-content;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4) var(--space-2) var(--space-3);
+  background: var(--paper);
+  border: var(--stroke) solid var(--ink);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 var(--lift) 0 var(--ink);
+  font-size: var(--hint-size);
+  font-weight: var(--hint-weight);
+  letter-spacing: var(--hint-track);
+  line-height: var(--hint-line);
+  text-transform: var(--hint-case);
+  white-space: nowrap;
+  animation: rise-in var(--slow) var(--ease-pop) backwards;
+}
+.hint-icon {
+  position: relative;
+  width: var(--space-5);
+  height: var(--space-6);
+  border-radius: var(--radius-pill);
+  background: var(--track);
+}
+.hint-dot {
+  position: absolute;
+  top: var(--space-1);
+  left: 0;
+  right: 0;
+  width: var(--space-3);
+  height: var(--space-3);
+  margin-inline: auto;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  border: var(--stroke) solid var(--ink);
+  box-sizing: border-box;
+  animation: drag-demo var(--demo-time) var(--ease) infinite;
+}
+
+/* The zoom hint sits just above the middle of the screen. */
+.hint-zoom {
+  bottom: calc(50% + var(--space-4));
+}
+.pinch-icon {
+  position: relative;
+  width: var(--space-6);
+  height: var(--space-5);
+}
+.pinch-dot {
+  position: absolute;
+  left: calc(50% - var(--space-3) / 2);
+  top: calc(50% - var(--space-3) / 2);
+  width: var(--space-3);
+  height: var(--space-3);
+  box-sizing: border-box;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  border: var(--stroke) solid var(--ink);
+  animation: pinch-a var(--demo-time) var(--ease) infinite;
+}
+.pinch-dot + .pinch-dot {
+  animation-name: pinch-b;
+}
+
+.callout {
+  position: absolute;
+  left: 50%;
+  top: 36%;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  pointer-events: none;
+  text-align: center;
+}
+.callout.show {
+  animation: callout var(--callout-time) var(--ease) both;
+}
+.callout-text {
+  font-size: var(--callout-size);
+  font-weight: var(--callout-weight);
+  letter-spacing: var(--callout-track);
+  line-height: var(--callout-line);
+  text-transform: var(--callout-case);
+  color: var(--paper);
+  text-shadow: var(--outline-ink), 0 var(--lift-callout) 0 var(--ink);
+  white-space: nowrap;
+}
+.callout.bad .callout-text {
+  color: var(--accent);
+}
+/* An ink ribbon with notched ends: the lobby tagline and the fail callout's
+   "what happens next". Long text wraps into balanced lines. */
+.ribbon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2) calc(var(--notch) + var(--space-3));
+  background: var(--ink);
+  color: var(--paper);
+  clip-path: polygon(0 0, 100% 0, calc(100% - var(--notch)) 50%, 100% 100%, 0 100%, var(--notch) 50%);
+  font-size: var(--ribbon-size);
+  font-weight: var(--ribbon-weight);
+  letter-spacing: var(--ribbon-track);
+  line-height: var(--ribbon-line);
+  text-transform: var(--ribbon-case);
+  text-align: center;
+  text-wrap: balance;
+  transform: rotate(calc(var(--tilt) * -1));
+}
+.callout-ribbon {
+  white-space: nowrap;
+}
+.callout.show .callout-ribbon {
+  animation: ribbon-in var(--slow) var(--ease-pop) var(--stagger) backwards;
+}
+.callout-icon {
+  width: var(--space-4);
+  height: var(--space-4);
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--line-stroke);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.callout.show .callout-icon {
+  animation: spin-back var(--slow) var(--ease) calc(var(--stagger) * 3) backwards;
+}
+.callout.bad.show .callout-text {
+  animation: shake var(--slow) var(--ease) calc(var(--stagger) * 2);
+}
+
+/* ------------------------------------------------------------ title */
+
+.title-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: calc(var(--safe-top) + var(--space-7)) var(--gutter-right) calc(var(--safe-bottom) + var(--space-5))
+    var(--gutter-left);
+}
+.title-screen.leaving {
+  animation: fade-out var(--base) var(--ease) both;
+}
+
+.title-top {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+}
+
+.logo {
+  margin: 0;
+  display: grid;
+  justify-items: center;
+  font-size: var(--title-size);
+  font-weight: var(--title-weight);
+  letter-spacing: var(--title-track);
+  line-height: var(--title-line);
+  text-transform: var(--title-case);
+  text-wrap: balance;
+  color: var(--paper);
+  text-shadow: var(--outline-ink-logo), 0 var(--lift-logo) 0 var(--ink);
+}
+.logo span {
+  display: block;
+  animation: logo-in var(--slow) var(--ease-pop) backwards;
+}
+.logo span + span {
+  color: var(--accent);
+  animation-delay: var(--stagger);
+}
+
+.tagline {
+  animation: ribbon-in var(--slow) var(--ease-pop) calc(var(--stagger) * 2) backwards;
+}
+
+.title-bottom {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-4);
+  pointer-events: auto;
+}
+
+.modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  width: min(100%, var(--modes-max));
+}
+.modes .mode:nth-child(1) {
+  animation: rise-in var(--slow) var(--ease-pop) calc(var(--stagger) * 3) backwards;
+}
+.modes .mode:nth-child(2) {
+  animation: rise-in var(--slow) var(--ease-pop) calc(var(--stagger) * 4) backwards;
+}
+
+/* A lobby mode button: an icon and the mode's name, side by side. */
+.mode {
+  position: relative;
+  appearance: none;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--hit);
+  padding: var(--space-3) var(--space-2);
+  border: var(--stroke) solid var(--ink);
+  border-radius: var(--radius-control);
+  box-shadow: 0 var(--lift-button) 0 var(--ink);
+  font-family: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+}
+.mode:active {
+  transform: translateY(calc(var(--lift-button) - var(--lift-pressed)));
+  box-shadow: 0 var(--lift-pressed) 0 var(--ink);
+}
+/* Play is a piece of mowed pitch, Speedrun a boost pad: the game's own
+   surfaces, each with a painted line inside like the pitch markings. */
+.mode-play {
+  background: repeating-linear-gradient(-45deg, var(--grass-a) 0 var(--stripe), var(--grass-b) 0 calc(var(--stripe) * 2));
+  color: var(--paper);
+}
+.mode-speedrun {
+  background: var(--boost-pad);
+  color: var(--boost-arrow);
+}
+.mode::after {
+  content: '';
+  position: absolute;
+  inset: var(--space-1);
+  border: var(--stroke) solid var(--paint);
+  border-radius: calc(var(--radius-control) - var(--space-1));
+  opacity: var(--dim);
+  pointer-events: none;
+}
+.mode-speedrun::after {
+  border-color: var(--boost-arrow);
+}
+.mode-icon {
+  flex: none;
+  width: var(--mode-icon);
+  height: var(--mode-icon);
+  overflow: visible;
+  stroke: var(--ink);
+  stroke-width: var(--fine-line);
+  stroke-linejoin: round;
+}
+.mode-play .mode-icon {
+  fill: var(--paper);
+}
+.mode-speedrun .mode-icon {
+  fill: var(--boost-arrow);
+}
+.mode-label {
+  font-size: var(--mode-size);
+  font-weight: var(--mode-weight);
+  letter-spacing: var(--mode-track);
+  line-height: var(--mode-line);
+  text-transform: var(--mode-case);
+  text-shadow: var(--outline-ink), 0 var(--lift-text) 0 var(--ink);
+  white-space: nowrap;
+}
+/* the Shop: a smaller pill under the two modes */
+.shop-btn {
+  appearance: none;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--hit);
+  padding: 0 var(--space-4);
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--stroke) solid var(--ink);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 var(--lift) 0 var(--ink);
+  font-family: inherit;
+  font-size: var(--button-size);
+  font-weight: var(--button-weight);
+  letter-spacing: var(--button-track);
+  line-height: var(--button-line);
+  text-transform: var(--button-case);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+  animation: rise-in var(--slow) var(--ease-pop) calc(var(--stagger) * 5) backwards;
+}
+.shop-btn:active {
+  transform: translateY(calc(var(--lift) - var(--lift-pressed)));
+  box-shadow: 0 var(--lift-pressed) 0 var(--ink);
+}
+.shop-btn svg {
+  width: var(--shop-icon);
+  height: var(--shop-icon);
+  overflow: visible;
+}
+.ball-face {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: var(--fine-line);
+}
+.ball-patch {
+  fill: var(--ink);
+  stroke: var(--ink);
+  stroke-width: var(--fine-line);
+  stroke-linejoin: round;
+}
+.ball-seam {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: var(--fine-line);
+  stroke-linecap: round;
+}
+
+/* the Speedrun best time, stuck on the button's top right corner */
+.mode-badge {
+  position: absolute;
+  top: calc(var(--space-4) * -1);
+  right: 0;
+  padding: var(--space-1) var(--space-2);
+  background: var(--paper);
+  color: var(--ink);
+  border: var(--stroke) solid var(--ink);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 var(--lift) 0 var(--ink);
+  font-size: var(--small-strong-size);
+  font-weight: var(--small-strong-weight);
+  letter-spacing: var(--small-strong-track);
+  line-height: var(--small-strong-line);
+  text-transform: var(--small-strong-case);
+  white-space: nowrap;
+  transform: rotate(var(--tilt));
+  animation: pop-in var(--slow) var(--ease-pop) calc(var(--stagger) * 6) backwards;
+}
+
+/* ---------------------------------------------------------- buttons */
+
+.btn {
+  appearance: none;
+  margin: 0;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-5);
+  border: var(--stroke) solid var(--ink);
+  border-radius: var(--radius-control);
+  box-shadow: 0 var(--lift-button) 0 var(--ink);
+  font-family: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition: transform var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+  pointer-events: auto;
+}
+.btn:active {
+  transform: translateY(calc(var(--lift-button) - var(--lift-pressed)));
+  box-shadow: 0 var(--lift-pressed) 0 var(--ink);
+}
+.btn:focus-visible,
+.mode:focus-visible,
+.shop-btn:focus-visible,
+.shop-cell:focus-visible,
+.btn-text:focus-visible,
+.icon-btn:focus-visible {
+  outline: var(--focus) solid var(--ink);
+  outline-offset: var(--space-1);
+}
+.btn-label {
+  font-size: var(--button-size);
+  font-weight: var(--button-weight);
+  letter-spacing: var(--button-track);
+  line-height: var(--button-line);
+  text-transform: var(--button-case);
+}
+.btn-primary {
+  background: var(--accent-deep);
+  color: var(--paper);
+}
+.btn-wide {
+  width: 100%;
+}
+.btn-text {
+  appearance: none;
+  margin: 0;
+  min-height: var(--hit);
+  padding: 0 var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 0;
+  font-family: inherit;
+  font-size: var(--small-strong-size);
+  font-weight: var(--small-strong-weight);
+  letter-spacing: var(--small-strong-track);
+  line-height: var(--small-strong-line);
+  text-transform: var(--small-strong-case);
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: var(--space-1);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+/* ------------------------------------------------------------- shop */
+/* No screen of its own: the lobby fades, the camera closes in on the ball, and
+   the sixteen balls float at the top, straight over the scene: real 3D balls
+   the game draws into each .shop-ball box, with their shadows. A locked ball
+   shows as its own shadow, with how to get it underneath. */
+
+.shop {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  justify-items: center;
+  padding: calc(var(--safe-top) + var(--space-3)) var(--gutter-right) calc(var(--safe-bottom) + var(--space-5)) var(--gutter-left);
+  pointer-events: auto; /* the scene behind holds still while you pick */
+}
+.shop.leaving {
+  animation: fade-out var(--base) var(--ease) both;
+}
+.shop-grid {
+  width: min(100%, var(--modes-max));
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-1);
+  animation: drop-in var(--slow) var(--ease-pop) backwards;
+}
+.shop-done {
+  grid-row: 3;
+  animation-delay: var(--stagger);
+}
+.shop-cell {
+  position: relative;
+  appearance: none;
+  margin: 0;
+  min-width: 0;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  background: none;
+  color: var(--paper);
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+.shop-ball {
+  position: relative;
+  width: var(--shop-ball);
+  height: var(--shop-ball);
+}
+/* the ball you play with: a gold ring */
+.shop-cell.selected .shop-ball::before {
+  content: "";
+  position: absolute;
+  inset: calc(var(--space-1) * -1);
+  border: var(--stroke) solid var(--gold);
+  border-radius: 50%;
+  box-shadow: 0 0 0 var(--fine-line) var(--ink), inset 0 0 0 var(--fine-line) var(--ink);
+}
+.shop-label {
+  max-width: 100%;
+  font-size: var(--small-strong-size);
+  font-weight: var(--small-strong-weight);
+  letter-spacing: var(--small-strong-track);
+  line-height: var(--small-strong-line);
+  text-transform: var(--small-strong-case);
+  text-align: center;
+  text-wrap: balance;
+  text-shadow: var(--outline-ink-label);
+}
+.shop-cell.selected .shop-label {
+  color: var(--gold);
+}
+.shop-cell.locked .shop-label {
+  font-size: var(--tiny-size);
+  font-weight: var(--tiny-weight);
+  letter-spacing: var(--tiny-track);
+  line-height: var(--tiny-line);
+  text-transform: var(--tiny-case);
+}
+.shop-cell.nope {
+  animation: shake var(--slow) var(--ease);
+}
+
+/* --------------------------------------------------------- complete */
+
+.complete {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: calc(var(--safe-top) + var(--space-4)) var(--gutter-right) calc(var(--safe-bottom) + var(--space-4))
+    var(--gutter-left);
+  background: var(--scrim);
+  pointer-events: auto;
+  animation: fade-in var(--base) var(--ease) backwards;
+}
+.complete-card {
+  width: min(100%, var(--card-max));
+  box-sizing: border-box;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  background: var(--paper);
+  border: var(--stroke) solid var(--ink);
+  border-radius: var(--radius-card);
+  box-shadow: 0 var(--lift-card) 0 var(--ink);
+  text-align: center;
+  animation: card-in var(--slow) var(--ease-pop) var(--stagger) backwards;
+}
+.eyebrow {
+  margin: 0;
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  letter-spacing: var(--label-track);
+  line-height: var(--label-line);
+  text-transform: var(--label-case);
+  color: var(--accent-deep);
+}
+.complete-title {
+  margin: 0;
+  font-size: var(--heading-size);
+  font-weight: var(--heading-weight);
+  letter-spacing: var(--heading-track);
+  line-height: var(--heading-line);
+  text-transform: var(--heading-case);
+  text-wrap: balance;
+}
+.complete-time {
+  margin: var(--space-1) 0 0;
+  font-size: var(--time-size);
+  font-weight: var(--time-weight);
+  letter-spacing: var(--time-track);
+  line-height: var(--time-line);
+  text-transform: var(--time-case);
+}
+.complete-best {
+  margin: 0 0 var(--space-3);
+  font-size: var(--small-strong-size);
+  font-weight: var(--small-strong-weight);
+  letter-spacing: var(--small-strong-track);
+  line-height: var(--small-strong-line);
+  text-transform: var(--small-strong-case);
+  color: var(--ink-soft);
+}
+.complete-best.new {
+  padding: var(--space-1) var(--space-3);
+  background: var(--gold);
+  border: var(--stroke) solid var(--ink);
+  border-radius: var(--radius-pill);
+  color: var(--ink);
+  animation: pop-in var(--slow) var(--ease-pop) calc(var(--stagger) * 5) backwards;
+}
+
+.flash {
+  position: absolute;
+  inset: 0;
+  background: var(--paper);
+  opacity: 0;
+  pointer-events: none;
+}
+.flash.go {
+  animation: flash var(--flash-time) var(--ease) both;
+}
+
+/* shown when the device has no WebGL 2 */
+.unsupported {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding-left: var(--gutter-left);
+  padding-right: var(--gutter-right);
+  text-align: center;
+  font-size: var(--hint-size);
+  font-weight: var(--hint-weight);
+  letter-spacing: var(--hint-track);
+  line-height: var(--hint-line);
+  text-transform: var(--hint-case);
+  color: var(--ink);
+}
+
+/* -------------------------------------------------------- keyframes */
+/* Entrances end on the element's own style and run with fill-mode
+   backwards, so nothing holds a transform once they finish (:active
+   presses keep working). Durations, delays and easings are tokens; the
+   offsets and scales inside each keyframe are its motion shape. */
+
+@keyframes drop-in {
+  from { transform: translateY(-140%); }
+}
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(24px) scale(0.92); }
+}
+@keyframes logo-in {
+  from { opacity: 0; transform: translateY(-30px) scale(0.7) rotate(-4deg); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+}
+@keyframes fade-out {
+  to { opacity: 0; transform: scale(1.04); }
+}
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(40px) scale(0.9); }
+}
+@keyframes pop-in {
+  from { transform: scale(0); }
+}
+@keyframes flip {
+  0% { transform: translateY(0); opacity: 1; }
+  45% { transform: translateY(-70%); opacity: 0; }
+  55% { transform: translateY(70%); opacity: 0; }
+  100% { transform: none; opacity: 1; }
+}
+@keyframes tick-bump {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.16); }
+  100% { transform: scale(1); }
+}
+@keyframes alarm {
+  0%, 100% { transform: rotate(0); }
+  15% { transform: rotate(-10deg) scale(1.08); }
+  35% { transform: rotate(9deg) scale(1.08); }
+  55% { transform: rotate(-6deg); }
+  75% { transform: rotate(3deg); }
+}
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+@keyframes burst {
+  0% { opacity: 1; transform: scale(0.55) rotate(-12deg); }
+  60% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.2) rotate(10deg); }
+}
+@keyframes puff {
+  from { opacity: 1; transform: scale(0.5); }
+  to { opacity: 0; transform: scale(1.25); }
+}
+@keyframes twinkle {
+  0% { transform: scale(0) rotate(0); }
+  45% { transform: scale(1.2) rotate(45deg); }
+  100% { transform: scale(0) rotate(90deg); }
+}
+@keyframes shake {
+  0%, 100% { transform: none; }
+  20% { transform: translateX(-6px) rotate(-2deg); }
+  40% { transform: translateX(5px) rotate(2deg); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+@keyframes ribbon-in {
+  from { opacity: 0; transform: rotate(calc(var(--tilt) * -1)) scaleX(0.2); }
+}
+@keyframes spin-back {
+  from { transform: rotate(-360deg); }
+}
+@keyframes pinch-a {
+  0%, 15% { transform: translate(-3px, 2px); }
+  60%, 75% { transform: translate(-11px, -6px); }
+  100% { transform: translate(-3px, 2px); }
+}
+@keyframes pinch-b {
+  0%, 15% { transform: translate(3px, -2px); }
+  60%, 75% { transform: translate(11px, 6px); }
+  100% { transform: translate(3px, -2px); }
+}
+@keyframes drag-demo {
+  0%, 15% { transform: translateY(0); }
+  55%, 70% { transform: translateY(12px); }
+  76% { transform: translateY(-2px); }
+  100% { transform: translateY(0); }
+}
+@keyframes callout {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5) rotate(-6deg); }
+  14% { opacity: 1; transform: translate(-50%, -50%) scale(1.08) rotate(2deg); }
+  22% { transform: translate(-50%, -50%) scale(1) rotate(0); }
+  80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -62%) scale(0.96); }
+}
+@keyframes flash {
+  0% { opacity: 0.75; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+  /* the callout's end state is hidden: show it plainly instead */
+  .callout.show {
+    animation: none !important;
+    opacity: 1;
+  }
+}
