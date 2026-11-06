@@ -139,7 +139,7 @@ signed with the same upload key.
 
 1. Release builds keep `TESTER_TOOLS = false` in `src/config.ts` (set it to `true` only for a
    build you test with).
-2. The package id is `com.zqh7y.kickit` (in `android/app/build.gradle` and
+2. The package id is `com.zzqxck.kickit` (in `android/app/build.gradle` and
    `capacitor.config.ts`). Google Play fixes it for good at the first upload.
 3. In Play Console, create the app and upload the `.aab` to an internal testing track first.
 4. Store listing: use `store/play-icon-512.png`, `store/feature-graphic-1024x500.png` and the

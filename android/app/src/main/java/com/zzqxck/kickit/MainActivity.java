@@ -1,4 +1,4 @@
-package com.zqh7y.kickit;
+package com.zzqxck.kickit;
 
 import android.os.Bundle;
 import androidx.core.view.WindowCompat;
