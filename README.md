@@ -39,6 +39,8 @@ golf ball, disco ball, watermelon, the Earth, the Moon, a galaxy (its stars twin
 ball (its cracks glow). Each has its own goal: reach a floor, clear a number of
 floors, clear floors with the first kick, or finish a Speedrun (under a time, for the best ones).
 A locked ball shows as its shadow with its goal underneath; tap an unlocked one to play with it.
+Every ball has its own effect: a burst when it is kicked and a trail as it rolls (fire embers for
+the lava ball, stardust for the galaxy, juice and seeds for the watermelon...).
 Progress is saved on the device.
 
 **Tester mode** (for development): the bug button under the focus button turns it on. The

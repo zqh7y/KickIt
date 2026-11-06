@@ -1,6 +1,7 @@
 // Pooled effects: particles (sparkles, confetti, grass dust), ground
 // shockwave rings and teleport light beams. Nothing allocates per frame.
 import * as THREE from 'three';
+import type { BallFx } from './skins.ts';
 import { color } from './theme.ts';
 import { clamp, easeOutCubic } from './util.ts';
 
@@ -93,6 +94,9 @@ interface Beam {
   radius: number;
   height: number;
 }
+
+// gravity by how a ball's bits move: they drop, float, or rise like embers
+const BALL_GRAV = { fall: 7, float: 0.5, rise: -1.4 };
 
 const CONFETTI = [color.accent, color.gold, color.paper, '#6cc4f0', '#8fd16a', '#ff9bd0'];
 
@@ -235,6 +239,41 @@ export class Fx {
         hex: k % 3 === 0 ? color.grassSeam : k % 3 === 1 ? color.grassA : color.paint,
       });
     }
+  }
+
+  /** The ball's own burst on a kick: mostly the way it flies, some all round. */
+  ballKick(at: THREE.Vector3, dirX: number, dirZ: number, power: number, st: BallFx) {
+    const n = Math.round(16 + power * 24);
+    const fwd = Math.atan2(dirZ, dirX);
+    for (let k = 0; k < n; k++) {
+      const a = k % 3 === 0 ? Math.random() * Math.PI * 2 : fwd + (Math.random() - 0.5) * 1.6;
+      const s = (0.6 + Math.random() * 1.6) * (0.6 + power);
+      const up = st.move === 'rise' ? 1.4 + Math.random() * 1.4 : 0.8 + Math.random() * 1.6;
+      this.particle(st.look === 'spark' ? 0 : 2, at, new THREE.Vector3(Math.cos(a) * s, up, Math.sin(a) * s), {
+        size: (st.look === 'spark' ? 0.06 : 0.048) * (0.6 + Math.random() * 0.8),
+        max: (st.move === 'fall' ? 0.7 : 1.05) * (0.7 + Math.random() * 0.6),
+        grav: BALL_GRAV[st.move],
+        drag: 2.2,
+        hex: st.colors[k % st.colors.length],
+      });
+    }
+  }
+
+  /** One piece of the ball's trail as it rolls (the `k`-th, for its colour). */
+  ballTrail(at: THREE.Vector3, st: BallFx, k: number) {
+    const up = st.move === 'rise' ? 0.7 : st.move === 'float' ? 0.3 : 0.6;
+    this.particle(
+      st.look === 'spark' ? 0 : 2,
+      at,
+      new THREE.Vector3((Math.random() - 0.5) * 0.35, up * (0.6 + Math.random() * 0.8), (Math.random() - 0.5) * 0.35),
+      {
+        size: (st.look === 'spark' ? 0.048 : 0.038) * (0.7 + Math.random() * 0.6),
+        max: (st.move === 'fall' ? 0.6 : 0.9) * (0.8 + Math.random() * 0.4),
+        grav: BALL_GRAV[st.move],
+        drag: 1.4,
+        hex: st.colors[k % st.colors.length],
+      },
+    );
   }
 
   /** Single soft glint, for trails. */

@@ -53,6 +53,7 @@ const LOBBY_ZOOM = 0.9; // the lobby shows the turning floor from farther away
 const SHOP_ZOOM = 2; // the shop: twice the lobby's zoom, on the ball
 const RESTART_ARM = 2; // s a Speedrun restart waits for its second tap
 const STARS_AT = 0.3; // s into a clear when its stars start landing
+const TRAIL_STEP = 0.07; // tiles a rolling ball goes between two pieces of its trail
 const LOBBY_SPIN = (Math.PI * 2) / 36; // rad/s: one turn every 36 s
 const UNSPIN_TIME = 1.0; // s, back to the game's angle when a mode starts
 const KEY_BEST = (m: Mode) => `skypitch.best.${m}`;
@@ -143,7 +144,8 @@ export class Game {
   private ride = { view: null as FloorView | null, tile: null as Tile | null, base: 0 };
   private beamT = 0;
   private hopT = 9;
-  private trailT = 0;
+  private trailDist = 0; // distance rolled since the trail's last piece
+  private trailN = 0;
   private lastGround = new THREE.Vector3();
 
   private playerMode: PlayerMode = 'gone';
@@ -1184,7 +1186,8 @@ export class Game {
     this.shopBalls?.hop(SKINS.indexOf(skin));
     this.hud.shopFeedback(id, true);
     this.hopT = 0;
-    this.fx.sparkle(this.ballPos.clone(), 16, { speed: 1.4, up: 1.6, size: 0.03, max: 0.6 });
+    // a taste of its kick: the ball's own burst
+    this.fx.ballKick(this.ballPos.clone(), 1, 1, 0.7, skin.fx);
     this.sfx.appear();
     platform.haptic.tick();
   }
@@ -1253,12 +1256,9 @@ export class Game {
     const foot = new THREE.Vector3(b.x, b.y - BALL_R + 0.01, b.z);
     this.fx.kickDust(foot, dir.x, dir.y, power);
     this.fx.ring(foot, 0.08, 0.32 + power * 0.35, 0.4, color.paper, 0.85);
-    this.fx.sparkle(new THREE.Vector3(b.x - dir.x * 0.1, b.y, b.z - dir.y * 0.1), 5 + Math.round(power * 9), {
-      speed: 1 + power * 1.5,
-      up: 0.8,
-      size: 0.03,
-      max: 0.35,
-    });
+    // the ball's own burst (fire, stardust, juice...)
+    this.fx.ballKick(new THREE.Vector3(b.x - dir.x * 0.08, b.y, b.z - dir.y * 0.08), dir.x, dir.y, power, this.skin.fx);
+    this.fx.ring(foot, 0.1, 0.45 + power * 0.4, 0.5, this.skin.fx.colors[0], 0.9);
     this.sfx.kick(power);
     platform.haptic.kick(power);
     if (!this.reduced) this.cam.addShake(0.12 + power * 0.32);
@@ -1335,11 +1335,16 @@ export class Game {
         // hop on a clear
         this.hopT += dt;
         if (this.hopT < 0.45) b.y += hump(this.hopT / 0.45) * 0.32;
-        // glints behind a fast ball
-        this.trailT -= dt;
-        if (s.moving && s.speed > 2.6 && this.trailT <= 0) {
-          this.trailT = 0.035;
-          this.fx.trail(b, 0.02 + Math.min(0.025, (s.speed - 2.6) * 0.01));
+        // the ball's own trail as it rolls: a piece every little way it goes
+        if (s.moving && s.speed > 0.6 && s.state !== 'fallen') {
+          this.trailDist += s.speed * dt;
+          const step = this.reduced ? TRAIL_STEP * 3 : TRAIL_STEP;
+          if (this.trailDist >= step) {
+            this.trailDist = 0;
+            const back = 1 / Math.max(0.001, s.speed);
+            this.tmp.set(b.x - s.vx * back * BALL_R * 0.8, b.y - BALL_R * 0.55, b.z - s.vz * back * BALL_R * 0.8);
+            this.fx.ballTrail(this.tmp, this.skin.fx, this.trailN++);
+          }
         }
         // the circle warms up as the ball settles in it
         const inside = inTarget(this.floor, s.x, s.z);
