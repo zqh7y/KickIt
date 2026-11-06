@@ -15,9 +15,15 @@
       <canvas id="scene" aria-label="KickIt! playfield"></canvas>
 
       <div class="ui" id="ui">
+        <svg class="sprite" aria-hidden="true" focusable="false">
+          <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2.6l2.59 6.44 6.92.47-5.33 4.45 1.7 6.73L12 16.99l-5.88 3.7 1.7-6.73-5.33-4.45 6.92-.47z" /></symbol>
+        </svg>
         <header class="hud" id="hud" hidden>
           <div class="floor-count">
-            <span class="hud-label">Floor</span>
+            <span class="floor-head">
+              <span class="hud-label">Floor</span>
+              <span class="floor-stars" id="floor-stars" role="img" hidden><svg class="star" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-star" /></svg><svg class="star" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-star" /></svg><svg class="star" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-star" /></svg></span>
+            </span>
             <span class="hud-value"><span class="flip" id="floor-num">1</span><span class="of">/<span id="floor-total">50</span></span></span>
           </div>
 
@@ -65,6 +71,18 @@
           </button>
           <span class="tester-badge" id="tester-badge" hidden>Tester</span>
 
+          <button class="icon-btn restart-btn" id="restart-btn" type="button" aria-label="Restart floor">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path class="icon-ink" d="M19 12a7 7 0 1 1-2.05-4.95M18.5 3.5v4.2h-4.2" />
+              <path class="icon-line" d="M19 12a7 7 0 1 1-2.05-4.95M18.5 3.5v4.2h-4.2" />
+            </svg>
+          </button>
+
+          <div class="star-goals" id="star-goals" role="img" hidden>
+            <span class="star-goal" id="goal-time"><svg class="star" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-star" /></svg><span class="digits" id="goal-time-text">15s</span></span>
+            <span class="star-goal" id="goal-kicks"><svg class="star" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-star" /></svg><span id="goal-kicks-text">2 kicks</span></span>
+          </div>
+
           <div class="run-clock" id="run-clock" hidden>
             <span class="hud-label">Run</span>
             <span class="digits" id="run-time">0:00.00</span>
@@ -90,6 +108,12 @@
           Drag the ball back, let go to kick
         </p>
 
+        <div class="stars-result" id="stars-result" role="status" hidden>
+          <span class="star-slot"><svg class="star big" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-star" /></svg><span class="star-label"></span></span>
+          <span class="star-slot"><svg class="star big" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-star" /></svg><span class="star-label"></span></span>
+          <span class="star-slot"><svg class="star big" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-star" /></svg><span class="star-label"></span></span>
+        </div>
+
         <div class="callout" id="callout" role="status">
           <span class="callout-text" id="callout-text"></span>
           <span class="callout-ribbon ribbon" id="callout-ribbon" hidden>
@@ -108,6 +132,7 @@
               <button class="mode mode-play" id="btn-play" type="button">
                 <svg class="mode-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 4.8v14.4L19.5 12z" /></svg>
                 <span class="mode-label">Play</span>
+                <span class="mode-badge play-stars" id="play-stars" hidden><svg class="star" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-star" /></svg><span class="digits" id="play-stars-num">0</span></span>
               </button>
               <button class="mode mode-speedrun" id="btn-speedrun" type="button">
                 <svg class="mode-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13.6 2.2L5.2 13.4h6l-1.6 8.4 9.2-12.2h-6.1z" /></svg>

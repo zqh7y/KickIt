@@ -1,9 +1,11 @@
 // The ball. A football is a truncated icosahedron (12 pentagons, 20 hexagons)
 // pushed out onto a sphere, flat shaded. The other shop balls (tennis, basket,
-// volley, base, beach, pool, cricket, bowling, golf, disco, a watermelon, the Earth) are
+// volley, base, beach, pool, cricket, bowling, golf, disco, a watermelon, the Earth,
+// the Moon, a galaxy, a lava ball) are
 // a smooth sphere whose pattern is painted per pixel from where the pixel lies
-// on the ball, so lines and seams stay crisp at any size. Ink outlined, rolling
-// with real rotation.
+// on the ball, so lines and seams stay crisp at any size; the galaxy's stars
+// twinkle and the lava's cracks glow and pulse. Ink outlined, rolling with
+// real rotation.
 import * as THREE from 'three';
 import { CAM_PITCH, CAM_YAW } from './camera.ts';
 import { BALL_R } from './physics.ts';
@@ -24,6 +26,7 @@ const RIGHT = new THREE.Vector3().crossVectors(UP, FRONT).normalize();
 
 const PATTERN: Record<Exclude<BallKind, 'soccer'>, number> = {
   tennis: 1, basket: 2, volley: 3, base: 4, beach: 5, pool: 6, bowling: 7, golf: 8, disco: 9, melon: 10, earth: 11, cricket: 12,
+  moon: 13, galaxy: 14, lava: 15,
 };
 
 // p: a point on the unit ball. Every distance is a chord, so it is smooth for fwidth.
@@ -36,6 +39,8 @@ const paintGlsl = /* glsl */ `
   uniform vec3 uFront;
   uniform vec3 uRight;
   uniform vec3 uUp;
+  uniform float uTime;
+  uniform float uGlow;
   varying vec3 vBallPos;
   float bpHash(vec3 p) {
     p = fract(p * 0.3183099 + 0.1);
@@ -198,6 +203,70 @@ const paintGlsl = /* glsl */ `
     float along = abs(fract((atan(p.z, p.x) + PI) / PI2 * 90.0) - 0.5);
     return mix(c, uC1, bpInk(abs(d - 0.045), 0.016) * bpInk(along, 0.3));
   }
+  vec3 bpMoon(vec3 p) {
+    vec3 c = mix(uC0, uC1, smoothstep(0.44, 0.6, bpFbm(p * 1.3 + 2.1)));
+    c *= 0.9 + 0.18 * bpFbm(p * 2.5 + 7.3);
+    // craters: a darker floor inside a bright rim
+    vec3 g = p * 5.0;
+    vec3 i = floor(g);
+    float best = 9.0;
+    for (int z = -1; z <= 1; z++)
+      for (int y = -1; y <= 1; y++)
+        for (int x = -1; x <= 1; x++) {
+          vec3 cell = i + vec3(float(x), float(y), float(z));
+          if (bpHash(cell) > 0.55) continue;
+          vec3 fp = cell + 0.5 + 0.4 * (vec3(bpHash(cell + 11.0), bpHash(cell + 23.0), bpHash(cell + 37.0)) - 0.5);
+          best = min(best, length(g - fp) / (0.18 + 0.22 * bpHash(cell + 5.0)));
+        }
+    c = mix(c, uC1 * 0.7, (1.0 - smoothstep(0.78, 0.9, best)) * 0.85);
+    return mix(c, uC2, bpInk(abs(best - 0.94), 0.1));
+  }
+  vec3 bpGalaxy(vec3 p) {
+    float n = bpFbm(p * 1.8 + vec3(1.0, 4.0, 2.0));
+    vec3 c = mix(uC0, uC1, smoothstep(0.35, 0.75, n));
+    return mix(c, uC2, smoothstep(0.55, 0.85, bpFbm(p * 3.2 + n * 1.5)) * 0.7);
+  }
+  vec3 bpGalaxyGlow(vec3 p) {
+    // a few stars per cell, each twinkling at its own pace
+    vec3 g = p * 14.0;
+    vec3 i = floor(g);
+    float h = bpHash(i);
+    vec3 fp = 0.25 + 0.5 * vec3(bpHash(i + 3.0), bpHash(i + 9.0), bpHash(i + 15.0));
+    float star = step(0.6, h) * (1.0 - smoothstep(0.02, 0.09, length(fract(g) - fp)));
+    float tw = 0.55 + 0.45 * sin(uTime * (2.0 + 3.0 * h) + h * 40.0);
+    return uC3 * star * tw * 1.6 + uC2 * 0.22 * smoothstep(0.6, 0.9, bpFbm(p * 3.2 + 1.0));
+  }
+  // distance to the nearest crack between rock cells
+  float bpCrack(vec3 p) {
+    vec3 i = floor(p);
+    float d1 = 9.0;
+    float d2 = 9.0;
+    for (int z = -1; z <= 1; z++)
+      for (int y = -1; y <= 1; y++)
+        for (int x = -1; x <= 1; x++) {
+          vec3 cell = i + vec3(float(x), float(y), float(z));
+          vec3 fp = cell + 0.5 + 0.45 * (vec3(bpHash(cell), bpHash(cell + 13.0), bpHash(cell + 29.0)) - 0.5);
+          float d = length(p - fp);
+          if (d < d1) { d2 = d1; d1 = d; }
+          else if (d < d2) { d2 = d; }
+        }
+    return d2 - d1;
+  }
+  vec3 bpLava(vec3 p) {
+    vec3 rock = uC0 * (0.75 + 0.4 * bpFbm(p * 6.0));
+    return mix(rock, uC1, bpInk(bpCrack(p * 4.2), 0.06));
+  }
+  vec3 bpLavaGlow(vec3 p) {
+    float e = bpCrack(p * 4.2);
+    float pulse = 0.7 + 0.3 * sin(uTime * 2.4 + bpNoise(p * 3.0) * 6.2831);
+    return mix(uC1, uC2, pulse) * (bpInk(e, 0.07) + (1.0 - smoothstep(0.0, 0.22, e)) * 0.35) * pulse;
+  }
+  // the designs' own light: the galaxy's stars, the lava's cracks
+  vec3 ballGlow(vec3 p) {
+    if (uKind == 14) return bpGalaxyGlow(p) * uGlow;
+    if (uKind == 15) return bpLavaGlow(p) * uGlow;
+    return vec3(0.0);
+  }
   vec3 ballPaint(vec3 p) {
     if (uKind == 1) return bpTennis(p);
     if (uKind == 2) return bpBasket(p);
@@ -211,6 +280,9 @@ const paintGlsl = /* glsl */ `
     if (uKind == 10) return bpMelon(p);
     if (uKind == 11) return bpEarth(p);
     if (uKind == 12) return bpCricket(p);
+    if (uKind == 13) return bpMoon(p);
+    if (uKind == 14) return bpGalaxy(p);
+    if (uKind == 15) return bpLava(p);
     return vec3(1.0);
   }
 `;
@@ -228,7 +300,8 @@ function paintedMaterial(fade: SkyFade, paint: Record<string, THREE.IUniform>): 
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvBallPos = position;');
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', '#include <common>\n' + paintGlsl)
-      .replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb *= ballPaint(normalize(vBallPos));');
+      .replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb *= ballPaint(normalize(vBallPos));')
+      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += ballGlow(normalize(vBallPos));');
   };
   m.customProgramCacheKey = () => 'ball-paint';
   return m;
@@ -355,6 +428,8 @@ export class BallView {
     uFront: { value: FRONT },
     uRight: { value: RIGHT },
     uUp: { value: UP },
+    uTime: { value: 0 },
+    uGlow: { value: 1 },
   };
 
   constructor(fade: SkyFade, outlineU: OutlineUniforms) {
@@ -404,6 +479,12 @@ export class BallView {
   setLight(k: number) {
     (this.mesh.material as THREE.MeshLambertMaterial).color.setScalar(k);
     (this.round.material as THREE.MeshLambertMaterial).color.setScalar(k);
+    this.paint.uGlow.value = k;
+  }
+
+  /** Moving designs (the galaxy's stars, the lava's cracks) follow `t`, in seconds. */
+  tick(t: number) {
+    this.paint.uTime.value = t;
   }
 
   /** Rotate as if rolling with ground velocity (vx, vz) for dt. */

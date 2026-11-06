@@ -21,6 +21,7 @@ import { Hud, type Mode, type ShopCell } from './hud.ts';
 import { KickBall } from './kickBall.ts';
 import { TESTER_TOOLS } from './config.ts';
 import { ShopBalls } from './shopBalls.ts';
+import { bestStars, saveStars, starTarget, totalStars } from './stars.ts';
 import { KEY_BALL, KEY_CLEARS, KEY_ONES, SKINS, chosenSkin, countUp, goalMet, goalText, readRecords } from './skins.ts';
 import { FLOORS, heightAt, parseFloor, supportTile, surfaceAt, tileAt, type Floor, type Tile } from './levels.ts';
 import { BALL_R, BallSim, inTarget } from './physics.ts';
@@ -50,6 +51,8 @@ const ZOOMED = 1.05; // past this the view counts as zoomed in
 const MIN_POWER = 0.02;
 const LOBBY_ZOOM = 0.9; // the lobby shows the turning floor from farther away
 const SHOP_ZOOM = 2; // the shop: twice the lobby's zoom, on the ball
+const RESTART_ARM = 2; // s a Speedrun restart waits for its second tap
+const STARS_AT = 0.3; // s into a clear when its stars start landing
 const LOBBY_SPIN = (Math.PI * 2) / 36; // rad/s: one turn every 36 s
 const UNSPIN_TIME = 1.0; // s, back to the game's angle when a mode starts
 const KEY_BEST = (m: Mode) => `skypitch.best.${m}`;
@@ -129,6 +132,7 @@ export class Game {
   private shopOpen = false;
   private shopQueued = false; // Shop pressed while the lobby was still coming in
   private lobbyScale = 40; // the lobby view's scale, which the shop doubles
+  private restartArmed = -1; // clock time of a Speedrun restart's first tap
   private shopBalls: ShopBalls | null = null; // the shop's 3D balls, made on first open
   private skin = chosenSkin();
 
@@ -220,6 +224,7 @@ export class Game {
       next: () => this.goToFloor(this.navFloor() + 1),
       zoom: () => this.toggleZoom(),
       tester: () => this.toggleTester(),
+      restart: () => this.restartPressed(),
       shop: () => this.openShop(),
       shopDone: () => this.closeShop(),
       pickBall: (id) => this.pickBall(id),
@@ -256,7 +261,7 @@ export class Game {
       this.introDone = true;
       this.play(restore.mode, restore.floor, restore.runTime);
     } else {
-      this.hud.showTitle(this.best('speedrun'));
+      this.showTitle();
       this.state = 'title';
       this.floorIndex = this.savedFloor();
       this.buildFloor(this.floorIndex, null, 0.15);
@@ -387,6 +392,7 @@ export class Game {
     }
     this.clouds.update(real, this.cam);
     if (this.kickBall.update(real)) this.hud.sparkleKicks();
+    this.ball.tick(this.clock);
     if (this.shopBalls && this.hud.shopVisible) this.shopBalls.update(real);
     if (this.follow && this.cam.zoom > 1 && this.ballMode === 'sim' && !this.looks.size) this.cam.keepInView(this.ballPos, this.followMargin);
     this.cam.update(real);
@@ -640,6 +646,16 @@ export class Game {
     this.timeLeft = FLOORS[target].time;
     this.hud.setKicks(FLOORS[target].kicks, FLOORS[target].kicks, false);
     this.hud.setTimer(this.timeLeft, this.timeLeft, 'idle');
+    this.hud.setRestartMode(mode);
+    // the star targets show from the start (the camera leaves room for them)
+    if (mode === 'regular') {
+      const t = starTarget(target);
+      this.hud.setFloorStars(bestStars()[target]);
+      this.hud.setStarGoals({ time: t.time, kicks: t.kicks });
+    } else {
+      this.hud.setFloorStars(null);
+      this.hud.setStarGoals(null);
+    }
     this.heading = target;
     if (this.view && this.floorIndex === target && this.ballMode === 'sim' && !this.sim.moving && this.playerMode !== 'gone') {
       // the lobby floor is the one to play: zoom in and go
@@ -714,6 +730,48 @@ export class Game {
     this.hud.setKicks(def.kicks, def.kicks, animate);
     this.kickBall.refill(def.kicks);
     this.hud.setTimer(def.time, def.time, 'idle');
+    this.updateStars();
+  }
+
+  /** Play mode's stars in the HUD: this floor's best by its label, its targets under the timer. */
+  private updateStars() {
+    if (this.mode !== 'regular' || !this.floor) {
+      this.hud.setFloorStars(null);
+      this.hud.setStarGoals(null);
+      return;
+    }
+    const t = starTarget(this.floorIndex);
+    const def = this.floor.def;
+    this.hud.setFloorStars(bestStars()[this.floorIndex]);
+    this.hud.setStarGoals({ time: t.time - (def.time - this.timeLeft), kicks: t.kicks - (def.kicks - this.kicksLeft) });
+  }
+
+  /** The lobby, with the star total on Play and the best Speedrun on its button. */
+  private showTitle(focus = false) {
+    this.hud.setTotalStars(totalStars());
+    this.hud.showTitle(this.best('speedrun'), focus);
+  }
+
+  /** The HUD's restart: Play builds this floor afresh; Speedrun starts the run over, on a second tap. */
+  private restartPressed() {
+    if (this.state !== 'aim' && this.state !== 'roll') return;
+    if (this.mode === 'speedrun' && this.floorIndex > 0 && this.clock - this.restartArmed > RESTART_ARM) {
+      const at = this.clock;
+      this.restartArmed = at;
+      this.hud.armRestart(true);
+      this.after(RESTART_ARM, () => {
+        if (this.restartArmed !== at) return;
+        this.restartArmed = -1;
+        this.hud.armRestart(false);
+      });
+      return;
+    }
+    this.restartArmed = -1;
+    this.hud.armRestart(false);
+    this.hud.spinRestart();
+    this.sfx.whistle('pip');
+    platform.haptic.tick();
+    this.switchTo(this.mode === 'speedrun' ? 0 : this.floorIndex);
   }
 
   private runAgain() {
@@ -745,7 +803,8 @@ export class Game {
     this.hud.setNav({ visible: false, prev: false, next: false });
     this.navKey = '';
     this.hud.hideComplete();
-    this.hud.showTitle(this.best('speedrun'), true);
+    this.hud.hideStars();
+    this.showTitle(true);
     this.state = 'title';
     this.introDone = false;
     this.playerOut();
@@ -828,10 +887,12 @@ export class Game {
     const prev = show && at > 0;
     const next = show && at < (this.tester ? LAST : this.unlocked);
     const busy = !this.tester && this.state !== 'aim' && this.state !== 'roll';
-    const key = `${show}${prev}${next}${busy}`;
+    const restartable = this.state === 'aim' || this.state === 'roll';
+    const key = `${show}${prev}${next}${busy}${restartable}`;
     if (key === this.navKey) return;
     this.navKey = key;
     this.hud.setNav({ visible: show, prev, next, busy });
+    this.hud.setRestartEnabled(restartable);
   }
 
   // ------------------------------------------------------------- timers
@@ -851,6 +912,7 @@ export class Game {
       const st = this.state === 'clear' ? 'cleared' : this.timerOn ? 'run' : 'idle';
       if (this.hud.setTimer(this.timeLeft, this.floor.def.time, st)) this.sfx.tick(this.timeLeft <= 3);
       if (this.mode === 'speedrun') this.hud.setRunClock(this.runTime);
+      else if (this.state === 'aim' || this.state === 'kick' || this.state === 'roll') this.updateStars();
     }
   }
 
@@ -1087,7 +1149,7 @@ export class Game {
     if (!this.shopOpen) return;
     this.shopOpen = false;
     this.hud.hideShop();
-    this.hud.showTitle(this.best('speedrun'), true);
+    this.showTitle(true);
     this.frameCamera(false, 0.9);
   }
 
@@ -1643,6 +1705,9 @@ export class Game {
       this.unlocked = this.floorIndex + 1;
       storage.set(KEY_UNLOCKED, String(this.unlocked));
     }
+    const last = this.floorIndex >= LAST;
+    let wait = last ? 1.35 : 1.15;
+    if (this.mode === 'regular') wait = Math.max(wait, this.landStars());
     // the footballer pops up beside the ball to celebrate, facing you
     this.after(0.16, () => {
       const b = this.ballPos;
@@ -1651,13 +1716,43 @@ export class Game {
       this.player.setPose('celebrate');
       this.playerIn();
     });
-    const last = this.floorIndex >= LAST;
     this.heading = last ? this.floorIndex : this.floorIndex + 1;
-    this.after(last ? 1.35 : 1.15, () => (last ? this.finishRun() : this.nextFloor()));
+    this.after(wait, () => (last ? this.finishRun() : this.nextFloor()));
+  }
+
+  /**
+   * Play mode: this clear's stars (cleared, in time, in kicks), kept if they
+   * beat the floor's best, landing one by one with a chime each. Returns how
+   * long to stay on the floor so they can be seen.
+   */
+  private landStars(): number {
+    const t = starTarget(this.floorIndex);
+    const def = this.floor.def;
+    const word = t.kicks === 1 ? 'kick' : 'kicks';
+    const slots = [
+      { on: true, label: 'Cleared' },
+      { on: def.time - this.timeLeft <= t.time, label: `In ${t.time}s` },
+      { on: def.kicks - this.kicksLeft <= t.kicks, label: `In ${t.kicks} ${word}` },
+    ].sort((a, b) => Number(b.on) - Number(a.on)); // earned first: they fill left to right
+    const n = slots.filter((s) => s.on).length;
+    saveStars(this.floorIndex, n);
+    const gap = ui.starGap / 1000;
+    this.after(STARS_AT, () => this.hud.showStars(slots));
+    slots.forEach((s, k) =>
+      this.after(STARS_AT + k * gap, () => {
+        if (s.on) {
+          this.sfx.star(k);
+          platform.haptic.tick();
+        } else this.sfx.starMiss();
+      }),
+    );
+    this.after(STARS_AT + 2 * gap + 0.3, () => this.hud.setFloorStars(bestStars()[this.floorIndex]));
+    return STARS_AT + 2 * gap + 1.1;
   }
 
   private nextFloor() {
     const next = this.floorIndex + 1;
+    this.hud.hideStars();
     if (this.mode === 'regular') storage.set(KEY_FLOOR, String(next));
     this.state = 'switch';
     this.heading = next;
@@ -1672,6 +1767,7 @@ export class Game {
 
   private finishRun() {
     this.state = 'complete';
+    this.hud.hideStars();
     const time = this.runTime;
     // A best needs the whole run: Speedrun always is one; Play only from
     // floor 1 without jumps (the time of a resumed or jumped run means nothing).

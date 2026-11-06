@@ -1,6 +1,7 @@
-// The shop's sixteen balls (footballs, and tennis, basket, volley, base, beach,
-// pool, cricket, bowling, golf, disco balls, a watermelon and the Earth): what
-// each looks like and the goal that unlocks it.
+// The shop's sixteen balls (the classic football, tennis, basket, volley, base,
+// beach, pool, cricket, bowling, golf and disco balls, a watermelon, the Earth,
+// the Moon, a galaxy and a lava ball): what each looks like and the goal that
+// unlocks it.
 // Goals read the player's own records (floors reached, floors cleared, one-kick
 // clears, Speedrun times), all kept on the device.
 import { storage } from './util.ts';
@@ -13,7 +14,7 @@ export type Goal =
   | { kind: 'speedrun'; under?: number }; // finish a Speedrun (under this many seconds)
 
 /** What a ball is: a stitched football, or one of the round balls painted by src/ball.ts. */
-export type BallKind = 'soccer' | 'tennis' | 'basket' | 'volley' | 'base' | 'beach' | 'pool' | 'cricket' | 'bowling' | 'golf' | 'disco' | 'melon' | 'earth';
+export type BallKind = 'soccer' | 'tennis' | 'basket' | 'volley' | 'base' | 'beach' | 'pool' | 'cricket' | 'bowling' | 'golf' | 'disco' | 'melon' | 'earth' | 'moon' | 'galaxy' | 'lava';
 
 export interface Skin {
   id: string;
@@ -31,16 +32,16 @@ export const SKINS: Skin[] = [
   { id: 'volley', name: 'Volleyball', kind: 'volley', colors: ['#ffd23f', '#2b5fd9', '#f7f7f2', '#3b4a63'], goal: { kind: 'floor', n: 20 } },
   { id: 'base', name: 'Baseball', kind: 'base', colors: ['#f5f0e3', '#d0312d'], goal: { kind: 'floor', n: 30 } },
   { id: 'beach', name: 'Beach ball', kind: 'beach', colors: ['#ff5c47', '#3fa7f5', '#ffd84a', '#fbfbf6'], goal: { kind: 'floor', n: 40 } },
-  { id: 'gold', name: 'Gold', kind: 'soccer', colors: ['#ffd66b', '#a8681a'], goal: { kind: 'floor', n: 50 } },
+  { id: 'moon', name: 'Moon', kind: 'moon', colors: ['#d9dbe1', '#7f838f', '#ffffff'], goal: { kind: 'floor', n: 50 } },
   { id: 'pool', name: '8-Ball', kind: 'pool', colors: ['#17181c', '#fbfbf6'], goal: { kind: 'clears', n: 25 } },
   { id: 'cricket', name: 'Cricket', kind: 'cricket', colors: ['#b3262b', '#f3ead2'], goal: { kind: 'clears', n: 50 } },
   { id: 'bowling', name: 'Bowling', kind: 'bowling', colors: ['#2b2f8f', '#8a5ae0', '#0d0d18'], goal: { kind: 'clears', n: 100 } },
   { id: 'golf', name: 'Golf', kind: 'golf', colors: ['#f7f8f3', '#d9ddd3'], goal: { kind: 'ones', n: 5 } },
   { id: 'disco', name: 'Disco', kind: 'disco', colors: ['#e9eef5', '#7fe8ff', '#ff8ad8', '#3d4250'], goal: { kind: 'ones', n: 25 } },
   { id: 'melon', name: 'Watermelon', kind: 'melon', colors: ['#97d66e', '#2f7a35'], goal: { kind: 'speedrun' } },
-  { id: 'neon', name: 'Neon', kind: 'soccer', colors: ['#15161a', '#39ff88'], goal: { kind: 'speedrun', under: 20 * 60 } },
+  { id: 'galaxy', name: 'Galaxy', kind: 'galaxy', colors: ['#121a4a', '#4b2a8c', '#ff6fb5', '#fff6d8'], goal: { kind: 'speedrun', under: 20 * 60 } },
   { id: 'earth', name: 'Earth', kind: 'earth', colors: ['#2f80dc', '#63bd57', '#3f8f40', '#f4f8fb'], goal: { kind: 'speedrun', under: 14 * 60 } },
-  { id: 'diamond', name: 'Diamond', kind: 'soccer', colors: ['#effcff', '#5cc8f2'], goal: { kind: 'speedrun', under: 10 * 60 } },
+  { id: 'lava', name: 'Lava', kind: 'lava', colors: ['#2b211f', '#ff5a1f', '#ffd23a'], goal: { kind: 'speedrun', under: 10 * 60 } },
 ];
 
 /** The player's records the goals look at. */

@@ -90,6 +90,7 @@ export class KickBall {
         flourish = true;
       }
     }
+    this.ball.tick(this.t);
     const idleSpin = this.reduced ? 0 : this.left > 0 ? 1.2 : 0.25;
     this.q.setFromAxisAngle(this.axis, (idleSpin + this.boost) * dt);
     this.ball.spin.quaternion.premultiply(this.q);

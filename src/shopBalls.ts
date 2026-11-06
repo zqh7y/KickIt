@@ -85,6 +85,7 @@ export class ShopBalls {
   update(dt: number) {
     this.t += dt;
     for (const it of this.items) {
+      it.ball.tick(this.t);
       it.hopT += dt;
       it.boost *= 1 - damp(2.6, dt);
       if (this.reduced || it.locked) continue;

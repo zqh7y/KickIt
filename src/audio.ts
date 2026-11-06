@@ -233,6 +233,18 @@ export class Sfx {
     this.hiss(1.4, 0.08, 'bandpass', 2200, 1800, 0.9, 0.12, 0.2);
   }
 
+  /** A star landing on a clear; each one rings higher. */
+  star(k: number) {
+    const f = [987.77, 1318.51, 1760][Math.min(2, k)];
+    this.tone('triangle', f, f, 0.32, 0.12, 0, 0.004);
+    this.tone('sine', f * 2, f * 2.003, 0.6, 0.045, 0.015, 0.01);
+  }
+
+  /** A star missed: a soft, low knock. */
+  starMiss() {
+    this.tone('sine', 330, 230, 0.14, 0.07);
+  }
+
   fail() {
     this.tone('sawtooth', 330, 300, 0.22, 0.06);
     this.tone('sawtooth', 262, 180, 0.42, 0.07, 0.18);

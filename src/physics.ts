@@ -21,6 +21,7 @@ export const TRAMP_R = 0.28;
 export const BOOST_R = 0.3;
 export const PORTAL_R = 0.28;
 const BELT_ACCEL = 3.2;
+const BOOST_ADD = 2; // a boost pad adds this much speed along its arrows (tiles/s), up to the pad's own top speed
 const LAND_E = 0.3;
 const LAND_BOUNCE_MIN = 1.4;
 const STEP_TOL = 0.04;
@@ -448,12 +449,15 @@ export class BallSim {
       }
       if (bi !== this.inBoost) {
         this.inBoost = bi;
-        if (bi >= 0) {
-          const b = f.boosts[bi];
-          const along = this.vx * b.dx + this.vz * b.dz;
+        const b = bi >= 0 ? f.boosts[bi] : null;
+        const along = b ? this.vx * b.dx + this.vz * b.dz : 0;
+        // A pad pushes the way its arrows point, adding speed to the ball's own
+        // (a soft roll gets a soft boost). Rolling against the arrows, the ball
+        // just crosses it.
+        if (b && along >= 0) {
           const px = this.vx - along * b.dx;
           const pz = this.vz - along * b.dz;
-          const v = Math.max(along, b.speed);
+          const v = Math.max(along, Math.min(b.speed, along + BOOST_ADD));
           this.vx = b.dx * v + px * 0.35;
           this.vz = b.dz * v + pz * 0.35;
           this.crawl = 0;

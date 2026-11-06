@@ -124,7 +124,11 @@ export const ui = {
   glint: 12, // px, a sparkle star
   nav: 48, // px, floor arrow tap area
   icon: 34, // px, a bare icon button's icon (floor arrows)
-  zoomIcon: 26, // px, the zoom button's focus frame (and the tester button's bug)
+  zoomIcon: 26, // px, the zoom button's focus frame (and the restart arrow, the tester button's bug)
+  starBig: 52, // px, a star landing on a clear
+  starHud: 15, // px, a star target under the timer
+  starMini: 12, // px, a floor's best stars by its label, and the lobby total
+  starGap: 230, // ms between the stars landing (the chimes follow it)
   shopBall: 'min(54px, 6.4vh)', // a ball's box in the shop grid (smaller on short screens)
   shopBallFill: 0.8, // the 3D ball's diameter as a share of its box (room for the bob and its shadow)
   shopIcon: 20, // px, the ball on the lobby's Shop button
@@ -210,6 +214,10 @@ export function themeCss(): string {
     `--nav-size:${ui.nav}px`,
     `--icon-size:${ui.icon}px`,
     `--zoom-icon:${ui.zoomIcon}px`,
+    `--star-big:${ui.starBig}px`,
+    `--star-hud:${ui.starHud}px`,
+    `--star-mini:${ui.starMini}px`,
+    `--star-gap:${ui.starGap}ms`,
     `--shop-ball:${ui.shopBall}`,
     `--shop-icon:${ui.shopIcon}px`,
     `--stripe:${ui.stripe}px`,

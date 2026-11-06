@@ -65,6 +65,8 @@ export interface HudHandlers {
   zoom: () => void;
   /** Tester button: tester mode on or off. */
   tester: () => void;
+  /** The HUD's restart button. */
+  restart: () => void;
   /** Lobby Shop button, and its Done button. */
   shop: () => void;
   shopDone: () => void;
@@ -103,6 +105,18 @@ export class Hud {
   private navNext = $<HTMLButtonElement>('nav-next');
   private zoomBtn = $<HTMLButtonElement>('zoom-btn');
   private testerBtn = $<HTMLButtonElement>('tester-btn');
+  private restartBtn = $<HTMLButtonElement>('restart-btn');
+  private restartLabel = 'Restart floor';
+  private floorStars = $('floor-stars');
+  private starGoals = $('star-goals');
+  private goalTime = $('goal-time');
+  private goalTimeText = $('goal-time-text');
+  private goalKicks = $('goal-kicks');
+  private goalKicksText = $('goal-kicks-text');
+  private goalKey = '';
+  private starsResult = $('stars-result');
+  private playStars = $('play-stars');
+  private playStarsNum = $('play-stars-num');
   private testerBadge = $('tester-badge');
   private shop = $('shop');
   private shopGrid = $('shop-grid');
@@ -175,6 +189,7 @@ export class Hud {
       [this.navNext, handlers.next],
       [this.zoomBtn, handlers.zoom],
       [this.testerBtn, handlers.tester],
+      [this.restartBtn, handlers.restart],
     ] as const) {
       // these sit above the canvas: pressing one never starts an aim drag or a pinch
       btn.addEventListener('pointerdown', (e) => e.stopPropagation());
@@ -208,9 +223,10 @@ export class Hud {
     if (mode !== 'regular') this.setNav({ visible: false, prev: false, next: false });
   }
 
-  /** Hides the whole HUD: bar, run clock, floor arrows, power, hints and any callout. */
+  /** Hides the whole HUD: bar, run clock, floor arrows, power, hints, stars and any callout. */
   hideHud() {
     this.hud.hidden = true;
+    this.starsResult.hidden = true;
     this.runClock.hidden = true;
     this.navPrev.hidden = true;
     this.navNext.hidden = true;
@@ -246,6 +262,103 @@ export class Hud {
     b.setAttribute('aria-label', state.zoomed ? 'Zoom out' : 'Zoom in on the shot');
     if (state.enabled) b.removeAttribute('aria-disabled');
     else b.setAttribute('aria-disabled', 'true');
+  }
+
+  // ------------------------------------------------------------- stars
+
+  /** A floor's best stars by its label; null hides them (Speedrun). */
+  setFloorStars(n: number | null) {
+    this.floorStars.hidden = n == null;
+    if (n == null) return;
+    this.floorStars.querySelectorAll('.star').forEach((s, k) => s.classList.toggle('off', k >= n));
+    this.floorStars.setAttribute('aria-label', `Best on this floor: ${n} of 3 stars`);
+  }
+
+  /**
+   * The star targets under the timer, as what is left of each: seconds and
+   * kicks (below zero, that star is gone). Null hides them (Speedrun).
+   */
+  setStarGoals(g: { time: number; kicks: number } | null) {
+    this.starGoals.hidden = !g;
+    if (!g) {
+      this.goalKey = '';
+      return;
+    }
+    const sec = Math.max(0, Math.ceil(g.time));
+    const kicks = Math.max(0, g.kicks);
+    const timeLost = g.time < 0;
+    const kicksLost = g.kicks < 0;
+    const warn = !timeLost && g.time <= 3;
+    const key = `${sec}|${kicks}|${timeLost}|${kicksLost}|${warn}`;
+    if (key === this.goalKey) return;
+    const was = this.goalKey ? this.goalKey.split('|') : null;
+    this.goalKey = key;
+    const word = kicks === 1 ? 'kick' : 'kicks';
+    this.goalTimeText.textContent = `${sec}s`;
+    this.goalKicksText.textContent = `${kicks} ${word}`;
+    this.goalTime.classList.toggle('warn', warn);
+    this.markGoal(this.goalTime, timeLost, was?.[2] === 'false');
+    this.markGoal(this.goalKicks, kicksLost, was?.[3] === 'false');
+    this.starGoals.setAttribute(
+      'aria-label',
+      `Star targets: ${timeLost ? 'time missed' : `clear within ${sec} seconds`}, ${kicksLost ? 'kicks missed' : `within ${kicks} ${word}`}`,
+    );
+  }
+
+  private markGoal(el: HTMLElement, lost: boolean, justLost: boolean) {
+    el.classList.toggle('lost', lost);
+    if (lost && justLost) restart(el, 'break');
+  }
+
+  /** A clear's stars land one by one, earned ones first, each with what it was for. */
+  showStars(slots: { on: boolean; label: string }[]) {
+    const els = this.starsResult.querySelectorAll<HTMLElement>('.star-slot');
+    slots.forEach((s, k) => {
+      const el = els[k];
+      if (!el) return;
+      el.classList.toggle('on', s.on);
+      el.classList.toggle('off', !s.on);
+      el.querySelector('.star-label')!.textContent = s.label;
+    });
+    this.starsResult.setAttribute('aria-label', `${slots.filter((s) => s.on).length} of 3 stars`);
+    this.starsResult.hidden = true; // so the landing plays again
+    reveal(this.starsResult);
+  }
+
+  hideStars() {
+    if (!this.starsResult.hidden) dismiss(this.starsResult);
+  }
+
+  /** The lobby's star total, as a badge on Play (none yet: no badge). */
+  setTotalStars(n: number) {
+    this.playStarsNum.textContent = String(n);
+    this.playStars.hidden = n <= 0;
+  }
+
+  // ----------------------------------------------------------- restart
+
+  /** Restart restarts the floor (Play) or the run (Speedrun). */
+  setRestartMode(mode: Mode) {
+    this.restartLabel = mode === 'speedrun' ? 'Restart run' : 'Restart floor';
+    this.armRestart(false);
+  }
+
+  /** While busy (between floors) the restart button dims and ignores presses. */
+  setRestartEnabled(on: boolean) {
+    if (on) this.restartBtn.removeAttribute('aria-disabled');
+    else this.restartBtn.setAttribute('aria-disabled', 'true');
+  }
+
+  /** Speedrun asks for a second tap: gold and shaking until then. */
+  armRestart(on: boolean) {
+    this.restartBtn.classList.toggle('armed', on);
+    if (on) restart(this.restartBtn, 'armed');
+    this.restartBtn.setAttribute('aria-label', on ? 'Tap again to restart the run' : this.restartLabel);
+  }
+
+  /** The arrow spins back once: the floor starts over. */
+  spinRestart() {
+    restart(this.restartBtn, 'spin');
   }
 
   /** Tester mode's button and badge. */

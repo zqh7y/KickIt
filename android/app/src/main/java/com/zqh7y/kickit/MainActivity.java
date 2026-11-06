@@ -1,4 +1,4 @@
-package com.skypitch.game;
+package com.zqh7y.kickit;
 
 import android.os.Bundle;
 import androidx.core.view.WindowCompat;

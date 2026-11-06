@@ -19,27 +19,32 @@ inside the circle, within a kick limit and a countdown. Every 5 floors bring a n
 Two modes:
 
 - **Play**: any mistake retries the floor; the countdown starts on your first touch; `<` and `>`
-  move between floors you have reached (saved on the device).
+  move between floors you have reached (saved on the device). Every floor gives up to **3 stars**:
+  one for clearing it, one for clearing it within its time target, one for clearing it within its
+  kick target. The two targets tick down under the timer; each floor's best shows by its number,
+  and the lobby shows the total on Play.
 - **Speedrun**: all 50 floors in one run; any mistake sends you back to floor 1; the run clock and
   your best time are saved on the device.
 
 Controls: grab the ball and drag it back, let go to kick. Touch anywhere else to look around:
 pinch (or the mouse wheel) to zoom, drag to pan, double-tap to zoom in or back out. The focus
 button under the kicks frames the shot (the ball and the circle). Looking around never starts
-the countdown.
+the countdown. The restart button under the floor number starts the floor over (in Speedrun it
+starts the run over, after a second tap).
 
 **Shop**: in the lobby, Shop zooms the camera in on the ball (twice the lobby's zoom) and floats
-16 real 3D balls with their shadows over the top of the screen, 4 by 4: footballs (Classic, Gold,
-Neon, Diamond) and a tennis ball, basketball, volleyball, baseball, beach ball, 8-ball, cricket
-ball, bowling ball, golf ball, disco ball, watermelon and the Earth. Each has its own goal: reach a floor, clear a number of
+16 real 3D balls with their shadows over the top of the screen, 4 by 4: the classic football, a
+tennis ball, basketball, volleyball, baseball, beach ball, 8-ball, cricket ball, bowling ball,
+golf ball, disco ball, watermelon, the Earth, the Moon, a galaxy (its stars twinkle) and a lava
+ball (its cracks glow). Each has its own goal: reach a floor, clear a number of
 floors, clear floors with the first kick, or finish a Speedrun (under a time, for the best ones).
 A locked ball shows as its shadow with its goal underneath; tap an unlocked one to play with it.
 Progress is saved on the device.
 
 **Tester mode** (for development): the bug button under the focus button turns it on. The
 `<` and `>` arrows then go to any floor, in either mode, as fast as you tap, and every shop ball
-is unlocked. Runs that used it set no records. Turn the button off for release builds with
-`TESTER_TOOLS = false` in `src/config.ts`.
+is unlocked. Runs that used it set no records. It is off in release builds
+(`TESTER_TOOLS = false` in `src/config.ts`); set it to `true` for a build you test with.
 
 ## What is where
 
@@ -54,11 +59,13 @@ is unlocked. Runs that used it set no records. Turn the button off for release b
 | `src/player.ts`, `src/ball.ts` | The 3D footballer and the football |
 | `src/theme.ts` | Every colour, font size and spacing value (the UI and the 3D scene both read it) |
 | `src/sky.ts` | The giant stadium far below the floors |
+| `src/stars.ts`, `src/stars.generated.ts` | The 3 stars: each floor's targets and the best stars kept |
 | `src/skins.ts`, `src/shopBalls.ts` | The shop's 16 balls and their goals, and the shop's 3D balls (the patterns are painted in `src/ball.ts`) |
 | `src/config.ts` | Build switches (`TESTER_TOOLS`) |
 | `src/audio.ts` | All sounds, synthesised at runtime (no audio files) |
 | `scripts/gen-floors.ts` | Generates floors 3-50 (each one solved before it is kept) |
 | `scripts/solve.ts` | Checks every floor can be beaten within its kick limit |
+| `scripts/stars.ts` | Sets each floor's star targets from its fewest-kick solution |
 | `scripts/feature-tests.ts` | One tiny floor per mechanic, solved through the real physics |
 | `android/` | The Android app (Capacitor 8, targets API 36 / Android 16) |
 | `store/` | Play Store icon, feature graphic and phone screenshots |
@@ -75,6 +82,17 @@ Check every floor can be beaten within its kick limit (or name floors, e.g. `nod
 
 ```bash
 node scripts/solve.ts
+```
+
+After changing floors, set their star targets again (the kicks of each floor's fewest-kick
+solution, and its rolling time plus a calm aim per kick):
+
+```bash
+node scripts/solve.ts --paths paths.json
+```
+
+```bash
+node scripts/stars.ts paths.json
 ```
 
 To hand-make a floor, add it to `HANDMADE` in `src/floors.ts`. Map tokens (rows along +z,
@@ -119,10 +137,10 @@ signed with the same upload key.
 
 ## Before the first Google Play upload
 
-1. Set `TESTER_TOOLS = false` in `src/config.ts`.
-2. Pick your final package id (it can never change once uploaded); it is `com.skypitch.game`
-   now. Edit `applicationId` in `android/app/build.gradle` and `appId` in
-   `capacitor.config.ts`, then rebuild.
+1. Release builds keep `TESTER_TOOLS = false` in `src/config.ts` (set it to `true` only for a
+   build you test with).
+2. The package id is `com.zqh7y.kickit` (in `android/app/build.gradle` and
+   `capacitor.config.ts`). Google Play fixes it for good at the first upload.
 3. In Play Console, create the app and upload the `.aab` to an internal testing track first.
 4. Store listing: use `store/play-icon-512.png`, `store/feature-graphic-1024x500.png` and the
    `store/screenshot-*.png` files.
