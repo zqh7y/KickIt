@@ -1,4 +1,4 @@
-# KickIt!
+# Kick-It!
 
 A 3D football challenge game: kick the ball across 50 floating pitch floors and stop it
 inside the circle, within a kick limit and a countdown. Every 5 floors bring a new mechanic:

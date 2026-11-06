@@ -14,7 +14,7 @@ const hot = (window as unknown as { claude?: { hot?: HotHook } }).claude?.hot;
 function unsupported() {
   const p = document.createElement('p');
   p.className = 'unsupported';
-  p.textContent = 'KickIt! needs 3D graphics (WebGL), which this device or browser has turned off.';
+  p.textContent = 'Kick-It! needs 3D graphics (WebGL), which this device or browser has turned off.';
   document.getElementById('ui')?.appendChild(p);
 }
 

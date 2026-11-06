@@ -1,4 +1,4 @@
-// KickIt! theme: the single place for shared visual values.
+// Kick-It! theme: the single place for shared visual values.
 // The 3D scene and hud.ts import these directly; the UI styles read them as CSS custom
 // properties, which vite.config.ts injects into index.html at build time.
 

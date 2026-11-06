@@ -21,7 +21,7 @@ const importmap = {
     'three/examples/jsm/': `https://cdn.jsdelivr.net/npm/three@${THREE}/examples/jsm/`,
   },
 };
-const page = `<title>KickIt!</title>
+const page = `<title>Kick-It!</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style id="theme-tokens">${tokens}</style>
 <style>${css}</style>

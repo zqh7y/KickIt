@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">KickIt!</string>
-    <string name="title_activity_main">KickIt!</string>
+    <string name="app_name">Kick-It!</string>
+    <string name="title_activity_main">Kick-It!</string>
     <string name="package_name">com.zzqxck.kickit</string>
     <string name="custom_url_scheme">com.zzqxck.kickit</string>
 </resources>
