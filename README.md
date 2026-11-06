@@ -147,3 +147,5 @@ signed with the same upload key.
 4. Store listing: use `store/play-icon-512.png`, `store/feature-graphic-1024x500.png` and the
    `store/screenshot-*.png` files.
 5. Data safety: the game collects and shares no data. Best times are stored only on the device.
+6. Privacy policy: `PRIVACY.md` in this repo (https://github.com/zqh7y/KickIt/blob/master/PRIVACY.md),
+   linked from the lobby and from the Play Console.

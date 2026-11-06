@@ -774,6 +774,25 @@ body {
   transition: transform var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
   animation: rise-in var(--slow) var(--ease-pop) calc(var(--stagger) * 5) backwards;
 }
+/* the privacy policy, linked from the lobby (Google Play asks for it in the app) */
+.privacy-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hit);
+  padding: 0 var(--space-3);
+  font-size: var(--tiny-size);
+  font-weight: var(--tiny-weight);
+  letter-spacing: var(--tiny-track);
+  line-height: var(--tiny-line);
+  text-transform: var(--tiny-case);
+  color: var(--paper);
+  text-shadow: var(--outline-ink-label);
+  text-decoration: underline;
+  text-underline-offset: var(--space-1);
+  border-radius: var(--radius-pill);
+  pointer-events: auto;
+  animation: rise-in var(--slow) var(--ease-pop) calc(var(--stagger) * 6) backwards;
+}
 .shop-btn:active {
   transform: translateY(calc(var(--lift) - var(--lift-pressed)));
   box-shadow: 0 var(--lift-pressed) 0 var(--ink);
@@ -847,6 +866,7 @@ body {
 .btn:focus-visible,
 .mode:focus-visible,
 .shop-btn:focus-visible,
+.privacy-link:focus-visible,
 .shop-cell:focus-visible,
 .btn-text:focus-visible,
 .icon-btn:focus-visible {
