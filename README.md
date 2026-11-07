@@ -14,7 +14,7 @@ inside the circle, within a kick limit and a countdown. Every 5 floors bring a n
 | 31-35 | Pinball bumpers |
 | 36-40 | Portals |
 | 41-45 | Conveyor belts |
-| 46-50 | Everything at once |
+| 46-50 | A mix of the earlier mechanics |
 
 Two modes:
 

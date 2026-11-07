@@ -53,7 +53,7 @@ export const SLIDES: Slide[] = [
   {
     shot: 'mayhem',
     title: ['Can you beat', '<b>all 50?</b>'],
-    ribbon: 'The last floors mix every twist',
+    ribbon: 'The last floors mix many twists',
     tilt: 2.5,
     deco: [['star', 20, 46, 26, -12], ['glint', 318, 60, 18, 0], ['glint gold', 316, 556, 20, 0]],
   },
